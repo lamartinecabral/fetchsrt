@@ -14,7 +14,7 @@
         </ul>
       </div>
     </main>
-    <div class="loading none"><span class="center">loading...</span></div>
+    <div id="loading" class="none"><span class="center">loading...</span></div>
     <script>
       let input = document.getElementById('input');
       input.addEventListener('change', (ev)=>{
@@ -56,7 +56,7 @@
       }
     </script>
     <style>
-      .loading{
+      #loading{
         background: rgb(0, 0, 0, 0.5);
         position: absolute;
         height: 100%;
@@ -64,7 +64,7 @@
         left: 0;
         top: 0;
       }
-      .loading span{
+      #loading span{
         background: white;
         padding: 1em;
       }
