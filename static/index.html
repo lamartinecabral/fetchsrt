@@ -1,0 +1,92 @@
+<html>
+  <head></head>
+  <body>
+    <main class="center">
+      <div>Choose release file</div>
+      <div>
+        <input id="input" type="file" multiple />
+      </div>
+      <div>
+        <ul id="ul">
+          <template id="template">
+            <li><a download></a></li>
+          </template>
+        </ul>
+      </div>
+    </main>
+    <div class="loading none"><span class="center">loading...</span></div>
+    <script>
+      let input = document.getElementById('input');
+      input.addEventListener('change', (ev)=>{
+        let list = document.getElementsByTagName('li');
+        for(let i=list.length-1; i>=0; i--) list[i].remove();
+        for(let name of [...ev.target.files].map(f=>f.name)){
+          let filename = name.replace(/\.[^\.]+$/, '')+'.srt';
+          let li = document.getElementById('template')
+            .content.children[0].cloneNode(true);
+          let a = li.children[0];
+          a.href = "/release/"+filename;
+          a.innerText = filename;
+          document.getElementById('ul').append(li);
+          a.addEventListener('click', (ev)=>{
+            ev.stopPropagation();
+            ev.preventDefault();
+            getSubtitle(ev.target.href);
+          });
+        }
+      })
+      function getSubtitle(url){
+        console.time('get');
+        setLoading(true);
+        let sleep = (time)=>{
+          return new Promise(r => setTimeout(r, time));
+        }
+        sleep(2000).then(()=> fetch(url).then(res=>res.text()).then(txt=>{
+          setLoading(false);
+          downloadUrl(
+            "data:text/plain;charset=utf-8,"+encodeURIComponent(txt),
+            url.split('/').pop()
+          );
+        }) );
+      }
+      function setLoading(b = true){
+        if(!b) document.querySelector('.loading').classList.add('none');
+        else document.querySelector('.loading').classList.remove('none');
+      }
+      function downloadUrl(URL, filename=''){
+        let link = document.createElement('a');
+        link.href = URL; link.download = filename || 'untitled';
+        link.click();
+      }
+    </script>
+    <style>
+      .loading{
+        background: rgb(0, 0, 0, 0.5);
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        left: 0;
+        top: 0;
+      }
+      .loading span{
+        background: white;
+        padding: 1em;
+      }
+      .none{
+        display: none;
+      }
+      .center{
+        transform: translate(-50%, -50%);
+        position: absolute;
+        left: 50%;
+        top: 50%;
+      }
+      main{
+        text-align: center;
+      }
+      body *{
+        font-family: monospace !important;
+      }
+    </style>
+  </body>
+</html>
