@@ -102,3 +102,10 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Replit
+.replit
+replit.nix
+
+# App folders
+subtitles/
