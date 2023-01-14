@@ -49,8 +49,8 @@
         });
       }
       function setLoading(b = true){
-        if(!b) document.querySelector('.loading').classList.add('none');
-        else document.querySelector('.loading').classList.remove('none');
+        if(!b) document.getElementById('loading').classList.add('none');
+        else document.getElementById('loading').classList.remove('none');
       }
       function downloadUrl(URL, filename=''){
         let link = document.createElement('a');
