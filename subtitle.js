@@ -1,8 +1,10 @@
 import cheerio from 'cheerio';
-import axios, {AxiosError} from 'axios';
+import axios from 'axios';
 import leven from 'leven';
 import fs from 'fs';
 import decompress from 'decompress';
+
+let logBuffer = [];
 
 function getSource(releaseName){
 	let x = RegExp([
@@ -135,6 +137,24 @@ function deleteFile(filename){
 	return fs.promises.rm(filename);
 }
 
+function log(...txts){
+	console.log(...txts);
+	logBuffer.push(txts.map(t=>{
+		try{
+			if(t.toString() === '[object Object]') return JSON.stringify(t);
+			return t;
+		} catch (e){
+			return t;
+		}
+	}).join(' '));
+}
+
+async function saveLog(filename){
+	let ret = await fs.promises.writeFile(filename, logBuffer.join('\n'));
+	logBuffer = [];
+	return ret;
+}
+
 async function main(str){
 	try{
 		if(fs.existsSync(str.replace(/\.[^\.]+$/,'.srt'))){
@@ -142,15 +162,16 @@ async function main(str){
 		}
 		let filename = (/\/[^\/]*$/).exec(str)[0].substring(1);
 		let info = parseReleaseName(filename);
-		console.log('release parsed', info);
+		log('release parsed', info);
 		let imdbId = await getImdbId(`${info.name}+${info.year || info.episode}`);
-		console.log('found imdb id', imdbId);
+		log('found imdb id', imdbId);
 		let base = 'https://www.opensubtitles.org';
 		let path = '/en/search/sublanguageid-pob/imdbid-'
-		let url = base + path + imdbId.replace('tt','');
-		console.log('url', url);
+		let sort = '/sort-6/asc-0';
+		let url = base + path + imdbId.replace('tt','') + sort;
+		log('url', url);
 		let response = await axios.get(url);
-		console.log('got response')
+		log('got response')
 		let $ = cheerio.load(response.data);
 		let downloadLink = getDownloadLink($);
 		if(!downloadLink){
@@ -159,18 +180,20 @@ async function main(str){
 			downloadLink = result.ziplink;
 		}
 		downloadLink = base + downloadLink;
-		console.log('download link', downloadLink);
+		log('download link', downloadLink);
 		let zipfilename = str.replace(/\.[^\.]+$/,'.zip');
 		await save(downloadLink, zipfilename);
-		console.log('link downloaded', zipfilename);
+		log('link downloaded', zipfilename);
 		let originalSubtitleName = await extractSubtitle(zipfilename);
-		console.log('subtitle extracted');
-		console.log('original subtitle name:', originalSubtitleName)
+		log('subtitle extracted');
+		log('original subtitle name:', originalSubtitleName)
 		await deleteFile(zipfilename);
-		console.log('zip file deleted');
+		log('zip file deleted');
+    await saveLog(str.replace(/\.[^\.]+$/,'.srt.txt'));
 	} catch(error){
-		if(error instanceof AxiosError) throw error;
-		else throw error;
+    log(error.message);
+    await saveLog(str.replace(/\.[^\.]+$/,'.srt.txt'));
+		throw error;
 	}
 }
 

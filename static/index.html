@@ -13,12 +13,20 @@
       <div>
         <ul id="ul">
           <template id="template">
-            <li><a download></a></li>
+            <li>
+              <a download></a>
+              <a class="none" download>💬</a>
+            </li>
           </template>
         </ul>
       </div>
     </main>
-    <div id="loading" class="none"><span class="center">loading...</span></div>
+    <div id="loading" class="backdrop none">
+      <span class="center">loading...</span>
+    </div>
+    <div id="logs" class="backdrop none" onclick="closeLog(event)">
+      <pre class="center" onclick="nothing(event)">logs</pre>
+    </div>
     <script>
       let input = document.getElementById('input');
       input.addEventListener('change', (ev)=>{
@@ -31,19 +39,29 @@
           let a = li.children[0];
           a.href = "/release/"+filename;
           a.innerText = filename;
+          let info = li.children[1];
+          info.href = "/log/"+filename+'.txt';
           document.getElementById('ul').append(li);
           a.addEventListener('click', (ev)=>{
             ev.stopPropagation();
             ev.preventDefault();
-            getSubtitle(ev.target.href);
+            getSubtitle(ev.target.href).then(()=>{
+              ev.target.nextElementSibling.classList.remove('none');
+            });
           });
+          info.addEventListener('click', (ev)=>{
+            ev.stopPropagation();
+            ev.preventDefault();
+            showLogFile(ev.target.href);
+          })
         }
       })
       function getSubtitle(url){
         console.time('get');
         setLoading(true);
-        fetch(url).then(res=>res.blob()).then(blob=>{
+        return fetch(url).then(res=>res.blob()).then(blob=>{
           setLoading(false);
+          console.timeEnd('get');
           let blobUrl = URL.createObjectURL(blob);
           downloadUrl(blobUrl, url.split('/').pop());
         });
@@ -52,26 +70,28 @@
         if(!b) document.getElementById('loading').classList.add('none');
         else document.getElementById('loading').classList.remove('none');
       }
-      function downloadUrl(URL, filename=''){
+      function downloadUrl(url, filename=''){
         let link = document.createElement('a');
-        link.href = URL; link.download = filename || 'untitled';
+        link.href = url; link.download = filename || 'untitled';
         link.click();
-        setTimeout(()=>URL.revokeObjectURL(), 2000);
+        setTimeout(()=>URL.revokeObjectURL(url), 2000);
+      }
+      function showLogFile(url){
+        fetch(url).then(x=>x.text()).then(txt=>{
+          let logs = document.getElementById('logs');
+          logs.children[0].innerText = txt;
+          logs.classList.remove('none');
+        });
+      }
+      function closeLog(ev){
+        ev.target.classList.add('none');
+      }
+      function nothing(ev){
+        ev.stopPropagation();
+        ev.preventDefault();
       }
     </script>
     <style>
-      #loading{
-        background: rgb(0, 0, 0, 0.5);
-        position: absolute;
-        height: 100%;
-        width: 100%;
-        left: 0;
-        top: 0;
-      }
-      #loading span{
-        background: white;
-        padding: 1em;
-      }
       .none{
         display: none;
       }
@@ -83,9 +103,30 @@
       }
       main{
         text-align: center;
+        overflow: scroll;
+        max-width: 100%;
+      }
+      li{
+        text-align: start;
       }
       body *{
         font-family: monospace !important;
+      }
+      .backdrop{
+        background: rgb(0,0,0,0.5);
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        left: 0;
+        top: 0;
+      }
+      .backdrop > *{
+        white-space: nowrap;
+        background: white;
+        overflow: scroll;
+        max-height: 90%;
+        max-width: 90%;
+        padding: 1em;
       }
     </style>
   </body>
